@@ -1,0 +1,25 @@
+{
+  "name": "verdict",
+  "version": "1.0.0",
+  "description": "A Javascript library for working with truth and arrays.",
+  "main": "verdict.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/scolsen/verdict.git"
+  },
+  "keywords": [
+    "array",
+    "collection",
+    "truth",
+    "boolean"
+  ],
+  "author": "Scott Olsen",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/scolsen/verdict/issues"
+  },
+  "homepage": "https://github.com/scolsen/verdict#readme"
+}

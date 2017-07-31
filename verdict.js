@@ -53,6 +53,30 @@ function or_collapse(arrays){
     }
     return filter_out(res, is_undefined());
 }
+/**
+/* Collapse an array of truth arrays into a single array
+/* of the specified truth values.
+/* Returns the result of subsequently resolving each truth value
+/* using the specified combination method.
+/* e.g [[t,f],[t,f],[,f,f], or_map]
+/* => [[t,f],[f,f]]
+/* => [t,f]
+/* using the method provided as combinatorMethod.
+/* method must be a map (and_map, or_map)
+ */
+function collapse(arrays, combinatorMethod){
+    let res = [];
+    arrays.reverse();
+    for(let i = arrays.length; i > 0; i--){
+        res.push(combinatorMethod(arrays.pop(), arrays.pop()));
+    }
+    let filtered = filter_out(res, is_undefined());
+    if(filtered.length > 1) {
+        return collapse(filtered, combinatorMethod);
+    } else {
+        return filtered[0];
+    }
+}
 
 // filter out all elements matching a given filter.
 // Return the resulting array.
@@ -79,6 +103,17 @@ function or_map(arrayOne, arrayTwo){
        }
        return x;
    }, arrayTwo);
+}
+
+// And map. Given two arrays, map their values using AND
+function and_map(arrayOne, arrayTwo){
+    if(arrayOne === undefined) return;
+    return arrayOne.map(function(x, index){
+        if(this[index] !== undefined){
+            return x && this[index];
+        }
+        return x;
+    }, arrayTwo);
 }
 
 // Reduce the contents of a truth array by applying and
@@ -151,10 +186,10 @@ function fullfills_all(array, criteriaFunction){
 
 // Retrieve the elements from a source array that satisfy the given
 // locate method.
-function retrieve(array, criteriaFunctions, fullfillmentMethod){
-    let fullfilllments = fullfillmentMethod(array, criteriaFunctions);
+function retrieve(array, criteriaFunctions, fulfillmentMethod){
+    let fulfillment = fulfillmentMethod(array, criteriaFunctions);
     return filter_out(array.map((x, index)=>{
-        if (fullfilllments.includes(index)) return x;
+        if (fulfillment.includes(index)) return x;
     }), is_undefined());
 }
 
@@ -204,11 +239,13 @@ exports.not_null = not_null;
 exports.is_undefined = is_undefined;
 exports.not = not;
 exports.or_map = or_map;
+exports.and_map = and_map;
 exports.or_collapse = or_collapse;
 exports.generalize = generalize;
 exports.filter_out = filter_out;
 exports.flatten = flatten;
 exports.fullfills_all = fullfills_all;
 exports.retrieve = retrieve;
+exports.collapse =collapse;
 
 locate(['dog', 'big', 4, 'sun'], [type_check_each('string')]);

@@ -8,7 +8,7 @@
 // Non truth values are wrapped in Boolean to convert to truth values.
 // Fn should be of form (x)=>{return x == 'string'} or some other test.
 function criterion(array, fn){
-    return array.map((x)=>{return Boolean(fn(x));});
+    return array.map((x, index, array)=>{return Boolean(fn(x, index, array));});
 }
 
 // Specify multiple criterion array elements must match.
@@ -58,7 +58,7 @@ function or_collapse(arrays){
 // Return the resulting array.
 function filter_out(array, criterionFn){
     let res = [];
-    let indexes = locate(array, criterionFn);
+    let indexes = flatten(locate(array, criterionFn));
     array.map((x, index)=>{if(!indexes.includes(index)) res.push(x);});
     return res;
 }
@@ -83,7 +83,7 @@ function or_map(arrayOne, arrayTwo){
 
 // Reduce the contents of a truth array by applying and
 // To each value successively
-function and_fold(){
+function and_fold(array){
     return array.reduce((x, y)=>{return x && y});
 }
 
@@ -112,7 +112,11 @@ function not_null(){
 
 // Criterion to confirm elements are not undefined
 function is_undefined(){
-    return (x)=>{return x === undefined}
+    return [(x)=>{return x === undefined}];
+}
+
+function is_included(m){
+    return (m, index, array)=>{return array.includes(m);}
 }
 
 // Checks to see if each array element matches a given regex
@@ -124,8 +128,42 @@ function matches(array, regex){
 // Check that each element of an array matches some criterion.
 // If so, gather the indexes of each matching element.
 // Returns an array containing the index of each element that matches the check.
-function locate(array, criterionFn){
-    return criterion(array, criterionFn).map((x, index)=>{if(x)return index}).filter((x)=>{return x !== undefined});
+function locate(array, criteriaFunctions){
+    return criteria(array, criteriaFunctions).map((x)=>{
+        return x.map((x, index)=>{
+            if(x)return index
+        }).filter((x)=>{
+            return x !== undefined
+        })});
+}
+
+// find the items that match both criteria
+// using locate and flatten
+function fullfills_all(array, criteriaFunction){
+    let indexes = locate(array, criteriaFunction);
+    return flatten(indexes).map((y)=>{
+        let check = criterion(indexes, (x)=>{return x.includes(y);});
+        if(and_fold(check)) return y;
+    }).filter((x)=>{
+        return x !== undefined;
+    });
+}
+
+// Retrieve the elements from a source array that satisfy the given
+// locate method.
+function retrieve(array, criteriaFunctions, fullfillmentMethod){
+    let fullfilllments = fullfillmentMethod(array, criteriaFunctions);
+    return filter_out(array.map((x, index)=>{
+        if (fullfilllments.includes(index)) return x;
+    }), is_undefined());
+}
+
+// After locating, reduce the result to a one dimension array
+// Unique items only. Does not duplicate indexes.
+function flatten(locateIndexes){
+    let flat = [];
+    locateIndexes.forEach((x)=>{return x.map((x)=>{if (!flat.includes(x)) flat.push(x)})});
+    return flat;
 }
 
 // Based on some criteria, split an array into two arrays.
@@ -169,5 +207,8 @@ exports.or_map = or_map;
 exports.or_collapse = or_collapse;
 exports.generalize = generalize;
 exports.filter_out = filter_out;
+exports.flatten = flatten;
+exports.fullfills_all = fullfills_all;
+exports.retrieve = retrieve;
 
-or_collapse([[true, true], [true, false], [false, false]]);
+locate(['dog', 'big', 4, 'sun'], [type_check_each('string')]);

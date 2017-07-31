@@ -11,6 +11,22 @@ function criterion(array, fn){
     return array.map((x)=>{return Boolean(fn(x));});
 }
 
+// Specify multiple criterion array elements must match.
+// Specify a mode to combine the truth array results of each criterion.
+// Combine values of each truth array using the specified modeCallback (and || or)
+// Functions should be provided as an array of criterion. (anonymous or named)
+function criteria(array, functions){
+    let res = [];
+    functions.forEach((x)=>{res.push(criterion(array, x));});
+    return res;
+}
+
+// Given the results of criteria, an array, of criterion arrays
+// reduce to a single array of truth values using the specified mode.
+function reduce_criteria(criteriaArray, modeFunction){
+   // needs or map and and map.
+}
+
 // Expects an array of truth values.
 // Returns an array containing the opposite value of each.
 // Optionally first generates the array of T values with a criterion.
@@ -21,13 +37,53 @@ function not(array, criterionFn){
 
 // Reduce the contents of a truth array by applying or
 // To each value successively
-function or(array){
+function or_fold(array){
     return array.reduce((x, y)=>{return x || y});
+}
+
+// Given an arbitrary number of arrays of truth values.
+// Combine each value using OR-- each array must have the same cardinality:
+// If an array does not have the same number of elements, fail.
+// Expect an arry of arrays as input -- if not, convert arguments to an array.
+function or_collapse(arrays){
+    let res = [];
+    arrays.reverse();
+    for (let i = arrays.length; i > 0; i--){
+        res.push(or_map(arrays.pop(), arrays.pop()));
+    }
+    return filter_out(res, is_undefined());
+}
+
+// filter out all elements matching a given filter.
+// Return the resulting array.
+function filter_out(array, criterionFn){
+    let res = [];
+    let indexes = locate(array, criterionFn);
+    array.map((x, index)=>{if(!indexes.includes(index)) res.push(x);});
+    return res;
+}
+
+function reverse_pop(array){
+    return array.reverse().pop();
+}
+
+// Given two arrays map their values using OR.
+// Arrays must have the same cardinality.
+// note we cannot use lambda here as we need to make use of this.
+// In the case a second Array is not provided, return x.
+function or_map(arrayOne, arrayTwo){
+   if(arrayOne === undefined) return;
+    return arrayOne.map(function (x, index){
+       if(this[index] !== undefined){
+           return x || this[index]
+       }
+       return x;
+   }, arrayTwo);
 }
 
 // Reduce the contents of a truth array by applying and
 // To each value successively
-function and(){
+function and_fold(){
     return array.reduce((x, y)=>{return x && y});
 }
 
@@ -55,8 +111,8 @@ function not_null(){
 }
 
 // Criterion to confirm elements are not undefined
-function not_undefined(){
-    return (x)=>{return x !== undefined}
+function is_undefined(){
+    return (x)=>{return x === undefined}
 }
 
 // Checks to see if each array element matches a given regex
@@ -99,6 +155,7 @@ function pop_to(array, number){
 }
 
 exports.criterion = criterion;
+exports.criteria = criteria;
 exports.locate = locate;
 exports.pop_to = pop_to;
 exports.type_check_all = type_check_all;
@@ -106,6 +163,11 @@ exports.matches = matches;
 exports.split = split;
 exports.type_check_each = type_check_each;
 exports.not_null = not_null;
-exports.not_undefined = not_undefined;
+exports.is_undefined = is_undefined;
 exports.not = not;
+exports.or_map = or_map;
+exports.or_collapse = or_collapse;
 exports.generalize = generalize;
+exports.filter_out = filter_out;
+
+or_collapse([[true, true], [true, false], [false, false]]);

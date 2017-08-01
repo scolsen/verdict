@@ -3,48 +3,47 @@
  * verdict.js
  */
 
-// Returns a truth mapping of all the items in an array.
-// Based on the return of some arbitrary function  which should contain a test.
-// Non truth values are wrapped in Boolean to convert to truth values.
-// Fn should be of form (x)=>{return x == 'string'} or some other test.
+/** Returns a truth mapping of all the items in an array.
+* Based on the return of some arbitrary function  which should contain a test.
+* Non truth values are wrapped in Boolean to convert to truth values.
+* Fn should be of form (x)=>{return x == 'string'} or some other test.
+ */
 function criterion(array, fn){
     return array.map((x, index, array)=>{return Boolean(fn(x, index, array));});
 }
 
-// Specify multiple criterion array elements must match.
-// Specify a mode to combine the truth array results of each criterion.
-// Combine values of each truth array using the specified modeCallback (and || or)
-// Functions should be provided as an array of criterion. (anonymous or named)
+/** Specify multiple criterion array elements must match.
+ * Specify a mode to combine the truth array results of each criterion.
+ * Combine values of each truth array using the specified modeCallback (and || or)
+ * Functions should be provided as an array of criterion. (anonymous or named)
+ */
 function criteria(array, functions){
     let res = [];
     functions.forEach((x)=>{res.push(criterion(array, x));});
     return res;
 }
 
-// Given the results of criteria, an array, of criterion arrays
-// reduce to a single array of truth values using the specified mode.
-function reduce_criteria(criteriaArray, modeFunction){
-   // needs or map and and map.
-}
-
-// Expects an array of truth values.
-// Returns an array containing the opposite value of each.
-// Optionally first generates the array of T values with a criterion.
+/** Expects an array of truth values.
+ * Returns an array containing the opposite value of each.
+ * Optionally first generates the array of T values with a criterion.
+ */
 function not(array, criterionFn){
     if(criterionFn) return criterion(array, criterionFn).map((x)=>{return !x});
     return array.map((x)=>{return !x});
 }
 
-// Reduce the contents of a truth array by applying or
-// To each value successively
+/** Reduce the contents of a truth array by applying or
+ * To each value successively
+ */
 function or_fold(array){
     return array.reduce((x, y)=>{return x || y});
 }
 
-// Given an arbitrary number of arrays of truth values.
-// Combine each value using OR-- each array must have the same cardinality:
-// If an array does not have the same number of elements, fail.
-// Expect an arry of arrays as input -- if not, convert arguments to an array.
+/** Given an arbitrary number of arrays of truth values.
+ * Combine each value using OR-- each array must have the same cardinality:
+ * If an array does not have the same number of elements, fail.
+ * Expect an array of arrays as input -- if not, convert arguments to an array.
+ */
 function or_collapse(arrays){
     let res = [];
     arrays.reverse();
@@ -70,16 +69,17 @@ function collapse(arrays, combinatorMethod){
     for(let i = arrays.length; i > 0; i--){
         res.push(combinatorMethod(arrays.pop(), arrays.pop()));
     }
-    let filtered = filter_out(res, is_undefined());
-    if(filtered.length > 1) {
-        return collapse(filtered, combinatorMethod);
+    if(filter_out(res, is_undefined()).length > 1) {
+        return collapse(filter_out(res, is_undefined()), combinatorMethod);
     } else {
-        return filtered[0];
+        return filter_out(res, is_undefined())[0];
     }
 }
 
-// filter out all elements matching a given filter.
-// Return the resulting array.
+/**
+ * filter out all elements matching a given filter.
+ * Return the resulting array.
+ */
 function filter_out(array, criterionFn){
     let res = [];
     let indexes = flatten(locate(array, criterionFn));
@@ -91,10 +91,12 @@ function reverse_pop(array){
     return array.reverse().pop();
 }
 
-// Given two arrays map their values using OR.
-// Arrays must have the same cardinality.
-// note we cannot use lambda here as we need to make use of this.
-// In the case a second Array is not provided, return x.
+/**
+ * Given two arrays map their values using OR.
+ * Arrays must have the same cardinality.
+ * note we cannot use lambda here as we need to make use of this.
+ * In the case a second Array is not provided, return x.
+ */
 function or_map(arrayOne, arrayTwo){
    if(arrayOne === undefined) return;
     return arrayOne.map(function (x, index){
@@ -116,22 +118,25 @@ function and_map(arrayOne, arrayTwo){
     }, arrayTwo);
 }
 
-// Reduce the contents of a truth array by applying and
-// To each value successively
+/** Reduce the contents of a truth array by applying and
+ * To each value successively
+ */
 function and_fold(array){
     return array.reduce((x, y)=>{return x && y});
 }
 
-// Reduce an array to a single truth value based on the general contents
-// Using an AND or an OR logical combination.
-// Or simply using sheer count.
-// default to OR
+/** Reduce an array to a single truth value based on the general contents
+ * Using an AND or an OR logical combination.
+ * Or simply using sheer count.
+ * default to OR
+ */
 function generalize(array, mode){
     return array.reduce((x, y)=>{return x || y});
 }
 
-// Returns true or false indicating whether an array
-// contains all elements matching the specified type.
+/** Returns true or false indicating whether an array
+ * contains all elements matching the specified type.
+ */
 function type_check_all(array, type){
     return array.every((x)=>{return typeof(x) === type});
 }
@@ -154,15 +159,17 @@ function is_included(m){
     return (m, index, array)=>{return array.includes(m);}
 }
 
-// Checks to see if each array element matches a given regex
-// returns an array of truth values indicating whether or not the element matched.
+/** Checks to see if each array element matches a given regex
+ * returns an array of truth values indicating whether or not the element matched.
+ */
 function matches(array, regex){
     return array.filter(type_check_each('string')).map((x)=>{return x.match(regex);});
 }
 
-// Check that each element of an array matches some criterion.
-// If so, gather the indexes of each matching element.
-// Returns an array containing the index of each element that matches the check.
+/** Check that each element of an array matches some criterion.
+ * If so, gather the indexes of each matching element.
+ * Returns an array containing the index of each element that matches the check.
+ */
 function locate(array, criteriaFunctions){
     return criteria(array, criteriaFunctions).map((x)=>{
         return x.map((x, index)=>{
@@ -172,8 +179,9 @@ function locate(array, criteriaFunctions){
         })});
 }
 
-// find the items that match both criteria
-// using locate and flatten
+/** find the items that match both criteria
+ * using locate and flatten
+ */
 function fullfills_all(array, criteriaFunction){
     let indexes = locate(array, criteriaFunction);
     return flatten(indexes).map((y)=>{
@@ -184,8 +192,9 @@ function fullfills_all(array, criteriaFunction){
     });
 }
 
-// Retrieve the elements from a source array that satisfy the given
-// locate method.
+/** Retrieve the elements from a source array that satisfy the given
+ * locate method.
+ */
 function retrieve(array, criteriaFunctions, fulfillmentMethod){
     let fulfillment = fulfillmentMethod(array, criteriaFunctions);
     return filter_out(array.map((x, index)=>{
@@ -193,17 +202,19 @@ function retrieve(array, criteriaFunctions, fulfillmentMethod){
     }), is_undefined());
 }
 
-// After locating, reduce the result to a one dimension array
-// Unique items only. Does not duplicate indexes.
+/** After locating, reduce the result to a one dimension array
+ * Unique items only. Does not duplicate indexes.
+ */
 function flatten(locateIndexes){
     let flat = [];
     locateIndexes.forEach((x)=>{return x.map((x)=>{if (!flat.includes(x)) flat.push(x)})});
     return flat;
 }
 
-// Based on some criteria, split an array into two arrays.
-// If the values match the given criteria, they are stored in res[0].
-// If the values do not match they are stored in res[1];
+/** Based on some criteria, split an array into two arrays.
+ * If the values match the given criteria, they are stored in res[0].
+ * If the values do not match they are stored in res[1];
+ */
 function split(array, criterionFn){
    let res = [[],[]];
    array.map((x, index)=>{
@@ -215,9 +226,10 @@ function split(array, criterionFn){
    return res;
 }
 
-// Given an array of arbitrary dimensions
-// bundle all values matching the criterion
-// into a single array
+/** Given an array of arbitrary dimensions
+ * bundle all values matching the criterion
+ * into a single array
+ */
 function converge(array, criterionFn){
     return 1;
 }

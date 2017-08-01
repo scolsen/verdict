@@ -209,13 +209,7 @@ function retrieve(array, criteriaFunctions, fulfillmentMethod){
     }), is_undefined());
 }
 
-/**
- * Retrieve deeply--also returns the members of nested
- * arrays that satisfy the given criteria
- */
-function deep_retrieve(){
 
-}
 
 /** After locating, reduce the result to a one dimension array
  * Unique items only. Does not duplicate indexes.
@@ -260,6 +254,17 @@ function deep_criterion(array, fn){
     return deep_map(array,(x, index, array)=>{return Boolean(fn(x, index, array));});
 }
 
+function deep_locate(){
+
+}
+
+/**
+ * Retrieve deeply--also returns the members of nested
+ * arrays that satisfy the given criteria
+ */
+function deep_retrieve(){
+
+}
 
 exports.deep = {};
 exports.criteria = criteria;

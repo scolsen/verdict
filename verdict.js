@@ -9,7 +9,7 @@
 * Fn should be of form (x)=>{return x == 'string'} or some other test.
  */
 function criterion(array, fn){
-    return deep_map(array,(x, index, array)=>{return Boolean(fn(x, index, array));});
+    return array.map((x, index, array)=>{return Boolean(fn(x, index, array));});
 }
 
 /** Specify multiple criterion array elements must match.
@@ -192,7 +192,7 @@ function deep_locate(){
 function fulfills_all(array, criteriaFunction){
     let indexes = locate(array, criteriaFunction);
     return flatten(indexes).map((y)=>{
-        let check = criterion(indexes, (x)=>{return x === y});
+        let check = criterion(indexes, (x)=>{return x.includes(y)});
         if(and_fold(check)) return y;
     }).filter((x)=>{
         return x !== undefined;
@@ -254,7 +254,14 @@ function pop_to(array, number){
     return array.map((x, index)=>{if (index < number) return array.pop();});
 }
 
-exports.criterion = criterion;
+// Deep implementations
+
+function deep_criterion(array, fn){
+    return deep_map(array,(x, index, array)=>{return Boolean(fn(x, index, array));});
+}
+
+
+exports.deep = {};
 exports.criteria = criteria;
 exports.locate = locate;
 exports.pop_to = pop_to;
@@ -273,6 +280,7 @@ exports.flatten = flatten;
 exports.fulfills_all = fulfills_all;
 exports.retrieve = retrieve;
 exports.collapse =collapse;
+exports.deep.criterion = deep_criterion;
 
-locate(['dog', 'big', 4, 'sun'], (type_check_each('string')), 'bee');
-retrieve(['dog', 'fish', 3, ['cat', 'speaker'], 4], type_check_each('string'), fulfills_all);
+console.log(locate(['dog', 'big', 4, 'sun'], (type_check_each('string')), 'bee'));
+console.log(retrieve(['dog', 'fish', 3, ['cat', 'speaker'], 4], type_check_each('string'), fulfills_all));

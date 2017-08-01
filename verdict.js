@@ -9,7 +9,7 @@
 * Fn should be of form (x)=>{return x == 'string'} or some other test.
  */
 function criterion(array, fn){
-    return array.map((x, index, array)=>{return Boolean(fn(x, index, array));});
+    return deep_map(array,(x, index, array)=>{return Boolean(fn(x, index, array));});
 }
 
 /** Specify multiple criterion array elements must match.
@@ -23,6 +23,7 @@ function criterion(array, fn){
 function criteria(array, functions){
     if(!Array.isArray(functions)) functions = arrize(arguments, 1);
     let res = [];
+
     functions.forEach((x)=>{res.push(criterion(array, x));});
     return res;
 }

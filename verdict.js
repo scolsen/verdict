@@ -16,11 +16,22 @@ function criterion(array, fn){
  * Specify a mode to combine the truth array results of each criterion.
  * Combine values of each truth array using the specified modeCallback (and || or)
  * Functions should be provided as an array of criterion. (anonymous or named)
+ * Note, due to argument shadowing because of function returns(?) more than one function
+ * must be wrapped in an array. The function also supports passing a single function outside of the array
+ * However subsequent arguments will be ignored.
  */
 function criteria(array, functions){
+    if(!Array.isArray(functions)) functions = arrize(arguments, 1);
     let res = [];
     functions.forEach((x)=>{res.push(criterion(array, x));});
     return res;
+}
+
+/**
+ * Convert arguments to an array, starting from the specified position
+ */
+function arrize(args, startPos){
+    return Array.from(args).slice(startPos);
 }
 
 /** Expects an array of truth values.
@@ -28,7 +39,7 @@ function criteria(array, functions){
  * Optionally first generates the array of T values with a criterion.
  */
 function not(array, criterionFn){
-    if(criterionFn) return criterion(array, criterionFn).map((x)=>{return !x});
+    if(criterionFn) return deep_map(criteria(array, criterionFn), (x)=>{return !x});
     return array.map((x)=>{return !x});
 }
 
@@ -39,19 +50,6 @@ function or_fold(array){
     return array.reduce((x, y)=>{return x || y});
 }
 
-/** Given an arbitrary number of arrays of truth values.
- * Combine each value using OR-- each array must have the same cardinality:
- * If an array does not have the same number of elements, fail.
- * Expect an array of arrays as input -- if not, convert arguments to an array.
- */
-function or_collapse(arrays){
-    let res = [];
-    arrays.reverse();
-    for (let i = arrays.length; i > 0; i--){
-        res.push(or_map(arrays.pop(), arrays.pop()));
-    }
-    return filter_out(res, is_undefined());
-}
 /**
 /* Collapse an array of truth arrays into a single array
 /* of the specified truth values.
@@ -77,6 +75,19 @@ function collapse(arrays, combinatorMethod){
 }
 
 /**
+ * deep_map. Apply designated function to all members
+ * Of an array of arrays of any size.
+ * Supplied function should have signature:
+ * func(x, index, array)
+ */
+function deep_map(array, func){
+    return array.map((x, index, array)=>{
+        if(Array.isArray(x)) return deep_map(x, func);
+        return func(x, index, array);
+    });
+}
+
+/**
  * filter out all elements matching a given filter.
  * Return the resulting array.
  */
@@ -85,10 +96,6 @@ function filter_out(array, criterionFn){
     let indexes = flatten(locate(array, criterionFn));
     array.map((x, index)=>{if(!indexes.includes(index)) res.push(x);});
     return res;
-}
-
-function reverse_pop(array){
-    return array.reverse().pop();
 }
 
 /**
@@ -123,15 +130,6 @@ function and_map(arrayOne, arrayTwo){
  */
 function and_fold(array){
     return array.reduce((x, y)=>{return x && y});
-}
-
-/** Reduce an array to a single truth value based on the general contents
- * Using an AND or an OR logical combination.
- * Or simply using sheer count.
- * default to OR
- */
-function generalize(array, mode){
-    return array.reduce((x, y)=>{return x || y});
 }
 
 /** Returns true or false indicating whether an array
@@ -249,15 +247,15 @@ exports.split = split;
 exports.type_check_each = type_check_each;
 exports.not_null = not_null;
 exports.is_undefined = is_undefined;
+exports.is_included = is_included;
 exports.not = not;
 exports.or_map = or_map;
 exports.and_map = and_map;
-exports.or_collapse = or_collapse;
-exports.generalize = generalize;
 exports.filter_out = filter_out;
 exports.flatten = flatten;
 exports.fullfills_all = fullfills_all;
 exports.retrieve = retrieve;
 exports.collapse =collapse;
 
-locate(['dog', 'big', 4, 'sun'], [type_check_each('string')]);
+locate(['dog', 'big', 4, 'sun'], (type_check_each('string')), 'bee');
+

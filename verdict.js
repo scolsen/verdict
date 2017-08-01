@@ -23,7 +23,6 @@ function criterion(array, fn){
 function criteria(array, functions){
     if(!Array.isArray(functions)) functions = arrize(arguments, 1);
     let res = [];
-
     functions.forEach((x)=>{res.push(criterion(array, x));});
     return res;
 }
@@ -178,13 +177,22 @@ function locate(array, criteriaFunctions){
         })});
 }
 
+/**
+ * Locate deeply. If a nested arrays member
+ * matches criteria, return a subarray containing
+ * the index values.
+ */
+function deep_locate(){
+
+}
+
 /** find the items that match both criteria
  * using locate and flatten
  */
-function fullfills_all(array, criteriaFunction){
+function fulfills_all(array, criteriaFunction){
     let indexes = locate(array, criteriaFunction);
     return flatten(indexes).map((y)=>{
-        let check = criterion(indexes, (x)=>{return x.includes(y);});
+        let check = criterion(indexes, (x)=>{return x === y});
         if(and_fold(check)) return y;
     }).filter((x)=>{
         return x !== undefined;
@@ -199,6 +207,14 @@ function retrieve(array, criteriaFunctions, fulfillmentMethod){
     return filter_out(array.map((x, index)=>{
         if (fulfillment.includes(index)) return x;
     }), is_undefined());
+}
+
+/**
+ * Retrieve deeply--also returns the members of nested
+ * arrays that satisfy the given criteria
+ */
+function deep_retrieve(){
+
 }
 
 /** After locating, reduce the result to a one dimension array
@@ -254,9 +270,9 @@ exports.or_map = or_map;
 exports.and_map = and_map;
 exports.filter_out = filter_out;
 exports.flatten = flatten;
-exports.fullfills_all = fullfills_all;
+exports.fulfills_all = fulfills_all;
 exports.retrieve = retrieve;
 exports.collapse =collapse;
 
 locate(['dog', 'big', 4, 'sun'], (type_check_each('string')), 'bee');
-
+retrieve(['dog', 'fish', 3, ['cat', 'speaker'], 4], type_check_each('string'), fulfills_all);

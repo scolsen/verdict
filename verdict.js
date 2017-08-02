@@ -74,18 +74,7 @@ function collapse(arrays, combinatorMethod){
     }
 }
 
-/**
- * deep_map. Apply designated function to all members
- * Of an array of arrays of any size.
- * Supplied function should have signature:
- * func(x, index, array)
- */
-function deep_map(array, func){
-    return array.map((x, index, array)=>{
-        if(Array.isArray(x)) return deep_map(x, func);
-        return func(x, index, array);
-    });
-}
+
 
 /**
  * filter out all elements matching a given filter.
@@ -177,15 +166,6 @@ function locate(array, criteriaFunctions){
         })});
 }
 
-/**
- * Locate deeply. If a nested arrays member
- * matches criteria, return a subarray containing
- * the index values.
- */
-function deep_locate(){
-
-}
-
 /** find the items that match both criteria
  * using locate and flatten
  */
@@ -208,8 +188,6 @@ function retrieve(array, criteriaFunctions, fulfillmentMethod){
         if (fulfillment.includes(index)) return x;
     }), is_undefined());
 }
-
-
 
 /** After locating, reduce the result to a one dimension array
  * Unique items only. Does not duplicate indexes.
@@ -248,14 +226,54 @@ function pop_to(array, number){
     return array.map((x, index)=>{if (index < number) return array.pop();});
 }
 
-// Deep implementations
+// Deep implementations //
+
+/**
+ * deep_map. Apply designated function to all members
+ * Of an array of arrays of any size.
+ * Supplied function should have signature:
+ * func(x, index, array)
+ */
+function deep_map(array, func){
+    return array.map((x, index, array)=>{
+        if(Array.isArray(x)) return deep_map(x, func);
+        return func(x, index, array);
+    });
+}
 
 function deep_criterion(array, fn){
     return deep_map(array,(x, index, array)=>{return Boolean(fn(x, index, array));});
 }
 
-function deep_locate(){
+function deep_criteria(array, functions){
+ if(!Array.isArray(functions)) functions = arrize(arguments, 1);
+    let res = [];
+    functions.forEach((x)=>{res.push(deep_criterion(array, x));});
+    return res;
+}
 
+/**
+ * Locate indexes and retain structure
+ * @param array
+ * @param criteriaFunctions
+ * @returns {Array.<T>|*}
+ */
+function deep_locate(array, criteriaFunctions){
+    function mapper (x, index, array){
+            if(x) return index;
+    }
+    return deep_filter(deep_map(deep_criteria(array, criteriaFunctions), mapper), (x)=>{return x !== undefined});
+}
+/**
+ * Filter contents and retain structure
+ * @param array
+ * @param filterFunction
+ */
+function deep_filter(array, filterFunction){
+    return array.map((x, index, array)=>{
+        if(Array.isArray(x)) return deep_filter(x, filterFunction);
+        if(filterFunction) return array.splice(index, 1);
+    });
 }
 
 /**
@@ -286,6 +304,8 @@ exports.fulfills_all = fulfills_all;
 exports.retrieve = retrieve;
 exports.collapse =collapse;
 exports.deep.criterion = deep_criterion;
+exports.deep.locate = deep_locate;
 
 console.log(locate(['dog', 'big', 4, 'sun'], (type_check_each('string')), 'bee'));
 console.log(retrieve(['dog', 'fish', 3, ['cat', 'speaker'], 4], type_check_each('string'), fulfills_all));
+deep_locate(['dog', 'doctor', [2, 4, 'dad'], 4, [3, [2, 'fish']]], type_check_each('string'));

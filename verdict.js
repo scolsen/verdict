@@ -3,15 +3,18 @@
  * verdict.js
  */
 
+const presets = require('./presets');
+
+//Criteria//
+
 /** Returns a truth mapping of all the items in an array.
 * Based on the return of some arbitrary function  which should contain a test.
 * Non truth values are wrapped in Boolean to convert to truth values.
 * Fn should be of form (x)=>{return x == 'string'} or some other test.
  */
 function criterion(array, fn){
-    return array.map((x, index, array)=>{return Boolean(fn(x, index, array));});
+    return deep_map(array,(x, index, array)=>{return Boolean(fn(x, index, array));});
 }
-
 /** Specify multiple criterion array elements must match.
  * Specify a mode to combine the truth array results of each criterion.
  * Combine values of each truth array using the specified modeCallback (and || or)
@@ -21,10 +24,77 @@ function criterion(array, fn){
  * However subsequent arguments will be ignored.
  */
 function criteria(array, functions){
-    if(!Array.isArray(functions)) functions = arrize(arguments, 1);
+ if(!Array.isArray(functions)) functions = arrize(arguments, 1);
     let res = [];
     functions.forEach((x)=>{res.push(criterion(array, x));});
     return res;
+}
+
+//Deep//
+
+/**
+ * deep_map. Apply designated function to all members
+ * Of an array of arrays of any size.
+ * Supplied function should have signature:
+ * func(x, index, array)
+ */
+function deep_map(array, func){
+    return array.map((x, index, array)=>{
+        if(Array.isArray(x)) return deep_map(x, func);
+        return func(x, index, array);
+    });
+}
+
+/**
+ * Filter contents and retain structure
+ * @param array
+ * @param filterFunction
+ */
+function deep_filter(array, filterFunction){
+    array.map((x, index, array)=>{
+        if(Array.isArray(x)) array[index] = deep_filter(x, filterFunction);
+    });
+    return array.filter(filterFunction);
+}
+
+/**
+ * Locate indexes and retain structure
+ * @param array
+ * @param criteriaFunctions
+ * @returns {Array.<T>|*}
+ */
+function deep_locate(array, criteriaFunctions){
+    function mapper (x, index, array){
+            if(x) return index;
+    }
+    return deep_filter(deep_map(criteria(array, criteriaFunctions), mapper), (x)=>{return x !== undefined});
+}
+
+function deep_flatten(locateIndexes){
+    let flat = [];
+    locateIndexes.forEach((x)=>{return x.map((x)=>{if (!flat.includes(x)) flat.push(x)})});
+    return flat;
+}
+
+/**
+ * Retrieve deeply--also returns the members of nested
+ * arrays that satisfy the given criteria
+ */
+function deep_retrieve(array, criteriaFunctions, fulfillmentMethod){
+let fulfillment = fulfillmentMethod(array, criteriaFunctions);
+    return filter_out(array.map((x, index)=>{
+        if (fulfillment.includes(index)) return x;
+    }), (x)=>{return x === undefined});
+}
+
+function deep_fulfills_all(array, criteriaFunction){
+    let indexes = deep_locate(array, criteriaFunction);
+    return flatten(indexes).map((y)=>{
+        let check = criterion(indexes, (x)=>{return x.includes(y)});
+        if(and_fold(check)) return y;
+    }).filter((x)=>{
+        return x !== undefined;
+    });
 }
 
 /**
@@ -38,9 +108,8 @@ function arrize(args, startPos){
  * Returns an array containing the opposite value of each.
  * Optionally first generates the array of T values with a criterion.
  */
-function not(array, criterionFn){
-    if(criterionFn) return deep_map(criteria(array, criterionFn), (x)=>{return !x});
-    return array.map((x)=>{return !x});
+function not(){
+    return (x)=>{return !x};
 }
 
 /** Reduce the contents of a truth array by applying or
@@ -73,8 +142,6 @@ function collapse(arrays, combinatorMethod){
         return filter_out(res, is_undefined())[0];
     }
 }
-
-
 
 /**
  * filter out all elements matching a given filter.
@@ -121,30 +188,7 @@ function and_fold(array){
     return array.reduce((x, y)=>{return x && y});
 }
 
-/** Returns true or false indicating whether an array
- * contains all elements matching the specified type.
- */
-function type_check_all(array, type){
-    return array.every((x)=>{return typeof(x) === type});
-}
 
-function type_check_each(type){
-    return (x)=>{return typeof(x) === type};
-}
-
-// Criterion to confirm elements are not null
-function not_null(){
-    return (x)=>{return x !== null}
-}
-
-// Criterion to confirm elements are not undefined
-function is_undefined(){
-    return [(x)=>{return x === undefined}];
-}
-
-function is_included(m){
-    return (m, index, array)=>{return array.includes(m);}
-}
 
 /** Checks to see if each array element matches a given regex
  * returns an array of truth values indicating whether or not the element matched.
@@ -157,14 +201,14 @@ function matches(array, regex){
  * If so, gather the indexes of each matching element.
  * Returns an array containing the index of each element that matches the check.
  */
-function locate(array, criteriaFunctions){
-    return criteria(array, criteriaFunctions).map((x)=>{
-        return x.map((x, index)=>{
-            if(x)return index
-        }).filter((x)=>{
-            return x !== undefined
-        })});
-}
+//function locate(array, criteriaFunctions){
+//    return criteria(array, criteriaFunctions).map((x)=>{
+//        return x.map((x, index)=>{
+//            if(x)return index
+//        }).filter((x)=>{
+//            return x !== undefined
+//        })});
+//}
 
 /** find the items that match both criteria
  * using locate and flatten
@@ -186,7 +230,7 @@ function retrieve(array, criteriaFunctions, fulfillmentMethod){
     let fulfillment = fulfillmentMethod(array, criteriaFunctions);
     return filter_out(array.map((x, index)=>{
         if (fulfillment.includes(index)) return x;
-    }), is_undefined());
+    }), (x)=>{return x === undefined});
 }
 
 /** After locating, reduce the result to a one dimension array
@@ -226,75 +270,32 @@ function pop_to(array, number){
     return array.map((x, index)=>{if (index < number) return array.pop();});
 }
 
-// Deep implementations //
-
-/**
- * deep_map. Apply designated function to all members
- * Of an array of arrays of any size.
- * Supplied function should have signature:
- * func(x, index, array)
- */
-function deep_map(array, func){
-    return array.map((x, index, array)=>{
-        if(Array.isArray(x)) return deep_map(x, func);
-        return func(x, index, array);
-    });
+function is_not_array(){
+    return (x)=>{return !Array.isArray(x)}
 }
 
-function deep_criterion(array, fn){
-    return deep_map(array,(x, index, array)=>{return Boolean(fn(x, index, array));});
-}
-
-function deep_criteria(array, functions){
- if(!Array.isArray(functions)) functions = arrize(arguments, 1);
-    let res = [];
-    functions.forEach((x)=>{res.push(deep_criterion(array, x));});
-    return res;
+//Ignore nested arrays in a criteria result
+function surface(array){
+   return array.map((x)=>{return deep_filter(x, is_not_array())});
 }
 
 /**
- * Locate indexes and retain structure
+ * Shallow locate is just a deep locate filtering out nested arrays beyond the top level
+ * Since the top level contains some number of arrays based on the number of
+ * Criteria provided.
  * @param array
  * @param criteriaFunctions
- * @returns {Array.<T>|*}
+ * @returns {Array}
  */
-function deep_locate(array, criteriaFunctions){
-    function mapper (x, index, array){
-            if(x) return index;
-    }
-    return deep_filter(deep_map(deep_criteria(array, criteriaFunctions), mapper), (x)=>{return x !== undefined});
-}
-/**
- * Filter contents and retain structure
- * @param array
- * @param filterFunction
- */
-function deep_filter(array, filterFunction){
-    return array.map((x, index, array)=>{
-        if(Array.isArray(x)) return deep_filter(x, filterFunction);
-        if(filterFunction) return array.splice(index, 1);
-    });
+function locate(array, criteriaFunctions){
+    return deep_locate(array, criteriaFunctions).map((x)=>{return deep_filter(x, is_not_array())});
 }
 
-/**
- * Retrieve deeply--also returns the members of nested
- * arrays that satisfy the given criteria
- */
-function deep_retrieve(){
-
-}
-
-exports.deep = {};
 exports.criteria = criteria;
 exports.locate = locate;
 exports.pop_to = pop_to;
-exports.type_check_all = type_check_all;
 exports.matches = matches;
 exports.split = split;
-exports.type_check_each = type_check_each;
-exports.not_null = not_null;
-exports.is_undefined = is_undefined;
-exports.is_included = is_included;
 exports.not = not;
 exports.or_map = or_map;
 exports.and_map = and_map;
@@ -303,9 +304,11 @@ exports.flatten = flatten;
 exports.fulfills_all = fulfills_all;
 exports.retrieve = retrieve;
 exports.collapse =collapse;
-exports.deep.criterion = deep_criterion;
-exports.deep.locate = deep_locate;
 
-console.log(locate(['dog', 'big', 4, 'sun'], (type_check_each('string')), 'bee'));
-console.log(retrieve(['dog', 'fish', 3, ['cat', 'speaker'], 4], type_check_each('string'), fulfills_all));
-deep_locate(['dog', 'doctor', [2, 4, 'dad'], 4, [3, [2, 'fish']]], type_check_each('string'));
+let vals = ['dog', 'brain', 5, ['throat', 5], 0, ['fish', 'job', ['doctor']]];
+let depth = deep_locate(vals, [presets.type_check_each('string'), presets.type_check_each('number')]);
+console.log(criteria(['dog', 'big', 4, 'sun', ['frog', 'cat']], [presets.type_check_each('string'), presets.type_check_each('number')]));
+console.log(deep_locate(['dog', 'big', 4, 'sun', ['frog', 'cat']], [presets.type_check_each('string'), presets.type_check_each('number')]));
+console.log(vals);
+console.log(depth);
+console.log(surface(depth));

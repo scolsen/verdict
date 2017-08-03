@@ -22,11 +22,21 @@ function criterion(array, fn){
  * Note, due to argument shadowing because of function returns(?) more than one function
  * must be wrapped in an array. The function also supports passing a single function outside of the array
  * However subsequent arguments will be ignored.
+ * If wrap is true, return an object
  */
-function criteria(array, functions){
- if(!Array.isArray(functions)) functions = arrize(arguments, 1);
+function criteria(array, functions, wrap){
+    if(!Array.isArray(functions)) functions = arrize(arguments, 1);
     let res = [];
     functions.forEach((x)=>{res.push(criterion(array, x));});
+    if(wrap === true) {
+        let obj = {};
+        functions.map((x, index)=>{
+            obj[index] = {};
+            obj[index].criterion = x;
+            obj[index].result = res[index];
+        });
+        return obj;
+    }
     return res;
 }
 
@@ -291,6 +301,22 @@ function locate(array, criteriaFunctions){
     return deep_locate(array, criteriaFunctions).map((x)=>{return deep_filter(x, is_not_array())});
 }
 
+/**
+ * Bundle an arrays contents into an object.
+ * Where a specified set of indicies serves as keys
+ * @param keyIndexes
+ * @param contents
+ * @returns {*|{}|Array}
+ */
+function bundle(keyIndexes, contents){
+    let bundle = {};
+    return contents.map((x, index)=>{
+        let ks = Object.keys(bundle);
+        if(keyIndexes.includes(index)) bundle[x] = [];
+        if(!keyIndexes.includes(index)) bundle[ks[0]].push(x);
+    });
+}
+
 exports.criteria = criteria;
 exports.locate = locate;
 exports.pop_to = pop_to;
@@ -307,8 +333,10 @@ exports.collapse =collapse;
 
 let vals = ['dog', 'brain', 5, ['throat', 5], 0, ['fish', 'job', ['doctor']]];
 let depth = deep_locate(vals, [presets.type_check_each('string'), presets.type_check_each('number')]);
+let crit = criteria(vals, [presets.type_check_each('string'), presets.type_check_each('number')], true);
 console.log(criteria(['dog', 'big', 4, 'sun', ['frog', 'cat']], [presets.type_check_each('string'), presets.type_check_each('number')]));
 console.log(deep_locate(['dog', 'big', 4, 'sun', ['frog', 'cat']], [presets.type_check_each('string'), presets.type_check_each('number')]));
 console.log(vals);
 console.log(depth);
 console.log(surface(depth));
+console.log(crit[0].result);

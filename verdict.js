@@ -224,7 +224,7 @@ function matches(array, regex){
  * using locate and flatten
  */
 function fulfills_all(array, criteriaFunction){
-    let indexes = locate(array, criteriaFunction);
+    let indexes = deep_locate(array, criteriaFunction);
     return flatten(indexes).map((y)=>{
         let check = criterion(indexes, (x)=>{return x.includes(y)});
         if(and_fold(check)) return y;
@@ -329,7 +329,7 @@ exports.filter_out = filter_out;
 exports.flatten = flatten;
 exports.fulfills_all = fulfills_all;
 exports.retrieve = retrieve;
-exports.collapse =collapse;
+exports.collapse = collapse;
 
 let vals = ['dog', 'brain', 5, ['throat', 5], 0, ['fish', 'job', ['doctor']]];
 let depth = deep_locate(vals, [presets.type_check_each('string'), presets.type_check_each('number')]);

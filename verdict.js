@@ -65,7 +65,6 @@ function deep_map(array, func){
  * @returns {*|Array|{}}
  */
 function pattern_map(array, func){
-    console.log("I am func: " + func);
     return array.map((x, index, array)=>{
         if(func[1](x)) func[0](x, index, array);
         if(Array.isArray(x)) return pattern_map(x, func);
@@ -115,15 +114,6 @@ let fulfillment = fulfillmentMethod(array, criteriaFunctions);
     }), (x)=>{return x === undefined});
 }
 
-function deep_fulfills_all(array, criteriaFunction){
-    let indexes = deep_locate(array, criteriaFunction);
-    return flatten(indexes).map((y)=>{
-        let check = criterion(indexes, (x)=>{return x.includes(y)});
-        if(and_fold(check)) return y;
-    }).filter((x)=>{
-        return x !== undefined;
-    });
-}
 
 /**
  * Convert arguments to an array, starting from the specified position
@@ -258,10 +248,11 @@ function fulfills_all(array, criteriaFunction){
  * locate method.
  */
 function retrieve(array, criteriaFunctions, fulfillmentMethod){
-    let fulfillment = fulfillmentMethod(array, criteriaFunctions);
-    return filter_out(array.map((x, index)=>{
-        if (fulfillment.includes(index)) return x;
-    }), (x)=>{return x === undefined});
+    let res = deep_locate(array, criteriaFunctions);
+    let fulfillment = fulfillmentMethod(res, clean(res));
+    return deep_filter(deep_map(array, (x, index)=>{
+        if(fulfillment.includes(index)) return x;
+    }), (x)=>{return x !== undefined});
 }
 
 /** After locating, reduce the result to a one dimension array
@@ -386,8 +377,8 @@ exports.fulfills_all = fulfills_all;
 exports.retrieve = retrieve;
 exports.collapse = collapse;
 
-let vals = ['dog', 'brain', 5, ['throat', 5], 0, ['fish', 'job', ['doctor']]];
-let depth = deep_locate(vals, [presets.type_check_each('string'), presets.type_check_each('number')]);
+let vals = ['dog', 'brain', 5, ['throat', 'phenomena'], 0, ['fish', 'google', ['doctor', 'rainbow']]];
+let depth = deep_locate(vals, [presets.type_check_each('string')]);
 let crit = criteria(vals, [presets.type_check_each('string'), presets.type_check_each('number')], true);
 console.log(criteria(['dog', 'big', 4, 'sun', ['frog', 'cat']], [presets.type_check_each('string'), presets.type_check_each('number')]));
 console.log(deep_locate(['dog', 'big', 4, 'sun', ['frog', 'cat']], [presets.type_check_each('string'), presets.type_check_each('number')]));
@@ -397,3 +388,4 @@ console.log(surface(depth));
 console.log(crit[0].result);
 console.log(extract_arrays(depth));
 console.log(all_include(depth, clean(depth)));
+console.log(retrieve(vals, [presets.type_check_each('string'), (x)=>{return x.length > 3}], all_include));

@@ -56,6 +56,24 @@ function deep_map(array, func){
 }
 
 /**
+ * Deep_map but only runs the specified function if
+ * the element matches the provided pattern which is
+ * a function that returns a Boolean and is passed as
+ * func[1]
+ * @param array
+ * @param func
+ * @returns {*|Array|{}}
+ */
+function pattern_map(array, func){
+    console.log("I am func: " + func);
+    return array.map((x, index, array)=>{
+        if(func[1](x)) func[0](x, index, array);
+        if(Array.isArray(x)) return pattern_map(x, func);
+        return null;
+    });
+}
+
+/**
  * Filter contents and retain structure
  * @param array
  * @param filterFunction
@@ -224,8 +242,11 @@ function matches(array, regex){
  * using locate and flatten
  */
 function fulfills_all(array, criteriaFunction){
-    let indexes = deep_locate(array, criteriaFunction);
-    return flatten(indexes).map((y)=>{
+    let indexes = deep_locate(array, criteriaFunction); //[[0,1,2,[3,4]],[2,1]]
+    return deep_map(indexes, (i)=>{
+       let check = criterion(indexes, (x)=>{if(Array.isArray(x)) return x.includes(i)});
+    });
+    indexes.map((y)=>{
         let check = criterion(indexes, (x)=>{return x.includes(y)});
         if(and_fold(check)) return y;
     }).filter((x)=>{
@@ -317,6 +338,40 @@ function bundle(keyIndexes, contents){
     });
 }
 
+function extract(array){
+    let res = [];
+    deep_map(array, (x)=>{res.push(x)});
+    return res;
+}
+
+// Pull out nested arrays
+// Stores each array of an array as an induvidual element
+// in a result array.
+function extract_arrays(array){
+    let res = [];
+    pattern_map(array, [(x)=>{res.push(x)}, (x)=>{return Array.isArray(x)}]);
+    return res;
+}
+
+function clean(array){
+    let res = [];
+    deep_map(array, (x)=>{
+        if(!res.includes(x)) res.push(x);
+    });
+    return res;
+}
+
+
+function all_include(array, values){
+    return values.map((i)=>{
+        let res = extract_arrays(array).map((x)=>{
+           return x.includes(i);
+       });
+        if(and_fold(res)) return i;
+        return null;
+    });
+}
+
 exports.criteria = criteria;
 exports.locate = locate;
 exports.pop_to = pop_to;
@@ -340,3 +395,5 @@ console.log(vals);
 console.log(depth);
 console.log(surface(depth));
 console.log(crit[0].result);
+console.log(extract_arrays(depth));
+console.log(all_include(depth, clean(depth)));

@@ -206,8 +206,6 @@ function and_fold(array){
     return array.reduce((x, y)=>{return x && y});
 }
 
-
-
 /** Checks to see if each array element matches a given regex
  * returns an array of truth values indicating whether or not the element matched.
  */
@@ -227,22 +225,6 @@ function matches(array, regex){
 //            return x !== undefined
 //        })});
 //}
-
-/** find the items that match both criteria
- * using locate and flatten
- */
-function fulfills_all(array, criteriaFunction){
-    let indexes = deep_locate(array, criteriaFunction); //[[0,1,2,[3,4]],[2,1]]
-    return deep_map(indexes, (i)=>{
-       let check = criterion(indexes, (x)=>{if(Array.isArray(x)) return x.includes(i)});
-    });
-    indexes.map((y)=>{
-        let check = criterion(indexes, (x)=>{return x.includes(y)});
-        if(and_fold(check)) return y;
-    }).filter((x)=>{
-        return x !== undefined;
-    });
-}
 
 /** Retrieve the elements from a source array that satisfy the given
  * locate method.
@@ -285,11 +267,6 @@ function split(array, criterionFn){
  */
 function converge(array, criterionFn){
     return 1;
-}
-
-// Pop out some number of array elements into another array.
-function pop_to(array, number){
-    return array.map((x, index)=>{if (index < number) return array.pop();});
 }
 
 function is_not_array(){
@@ -335,15 +312,23 @@ function extract(array){
     return res;
 }
 
-// Pull out nested arrays
-// Stores each array of an array as an induvidual element
-// in a result array.
+/**
+ * pull each array out of a nested array and push
+ * to a new array as individual elements.
+ * @param array
+ * @returns {Array}
+ */
 function extract_arrays(array){
     let res = [];
     pattern_map(array, [(x)=>{res.push(x)}, (x)=>{return Array.isArray(x)}]);
     return res;
 }
 
+/**
+ * Extract unique non-array members from an array.
+ * @param array
+ * @returns {Array}
+ */
 function clean(array){
     let res = [];
     deep_map(array, (x)=>{
@@ -352,7 +337,16 @@ function clean(array){
     return res;
 }
 
-
+/**
+ * If given two arrays, the content holding array
+ * and a subset of items to match against
+ * return only the values that appear in every nested array
+ * of the content holding array.
+ * If a value is not included in every nest, null is returned.
+ * @param array
+ * @param values
+ * @returns {*|Array|{}}
+ */
 function all_include(array, values){
     return values.map((i)=>{
         let res = extract_arrays(array).map((x)=>{
@@ -365,7 +359,6 @@ function all_include(array, values){
 
 exports.criteria = criteria;
 exports.locate = locate;
-exports.pop_to = pop_to;
 exports.matches = matches;
 exports.split = split;
 exports.not = not;
@@ -373,7 +366,6 @@ exports.or_map = or_map;
 exports.and_map = and_map;
 exports.filter_out = filter_out;
 exports.flatten = flatten;
-exports.fulfills_all = fulfills_all;
 exports.retrieve = retrieve;
 exports.collapse = collapse;
 
@@ -389,3 +381,4 @@ console.log(crit[0].result);
 console.log(extract_arrays(depth));
 console.log(all_include(depth, clean(depth)));
 console.log(retrieve(vals, [presets.type_check_each('string'), (x)=>{return x.length > 3}], all_include));
+console.log(all_include(['post', 'bear', ['dog', 'post', ['iron', 'post']]], ['post', 'rabinow']));

@@ -62,12 +62,13 @@ function deep_map(array, func){
  * func[1]
  * @param array
  * @param func
+ * @param pattern
  * @returns {*|Array|{}}
  */
-function pattern_map(array, func){
+function pattern_map(array, func, pattern){
     return array.map((x, index, array)=>{
-        if(func[1](x)) func[0](x, index, array);
-        if(Array.isArray(x)) return pattern_map(x, func);
+        if(pattern(x)) func(x, index, array);
+        if(Array.isArray(x)) return pattern_map(x, func, pattern);
         return null;
     });
 }
@@ -96,24 +97,6 @@ function deep_locate(array, criteriaFunctions){
     }
     return deep_filter(deep_map(criteria(array, criteriaFunctions), mapper), (x)=>{return x !== undefined});
 }
-
-function deep_flatten(locateIndexes){
-    let flat = [];
-    locateIndexes.forEach((x)=>{return x.map((x)=>{if (!flat.includes(x)) flat.push(x)})});
-    return flat;
-}
-
-/**
- * Retrieve deeply--also returns the members of nested
- * arrays that satisfy the given criteria
- */
-function deep_retrieve(array, criteriaFunctions, fulfillmentMethod){
-let fulfillment = fulfillmentMethod(array, criteriaFunctions);
-    return filter_out(array.map((x, index)=>{
-        if (fulfillment.includes(index)) return x;
-    }), (x)=>{return x === undefined});
-}
-
 
 /**
  * Convert arguments to an array, starting from the specified position
@@ -213,19 +196,6 @@ function matches(array, regex){
     return array.filter(type_check_each('string')).map((x)=>{return x.match(regex);});
 }
 
-/** Check that each element of an array matches some criterion.
- * If so, gather the indexes of each matching element.
- * Returns an array containing the index of each element that matches the check.
- */
-//function locate(array, criteriaFunctions){
-//    return criteria(array, criteriaFunctions).map((x)=>{
-//        return x.map((x, index)=>{
-//            if(x)return index
-//        }).filter((x)=>{
-//            return x !== undefined
-//        })});
-//}
-
 /** Retrieve the elements from a source array that satisfy the given
  * locate method.
  */
@@ -273,7 +243,12 @@ function is_not_array(){
     return (x)=>{return !Array.isArray(x)}
 }
 
-//Ignore nested arrays in a criteria result
+/**
+ * Grab only the surface of an array--top level elements.
+ * Filter out all nested arrays and their members.
+ * @param array
+ * @returns {*|{}|Array}
+ */
 function surface(array){
    return array.map((x)=>{return deep_filter(x, is_not_array())});
 }
@@ -306,6 +281,12 @@ function bundle(keyIndexes, contents){
     });
 }
 
+/**
+ * Extract all members (non-array) from an array.
+ * Does not ignore duplicates.
+ * @param array
+ * @returns {Array}
+ */
 function extract(array){
     let res = [];
     deep_map(array, (x)=>{res.push(x)});
@@ -320,7 +301,7 @@ function extract(array){
  */
 function extract_arrays(array){
     let res = [];
-    pattern_map(array, [(x)=>{res.push(x)}, (x)=>{return Array.isArray(x)}]);
+    pattern_map(array, (x)=>{res.push(x)}, (x)=>{return Array.isArray(x)});
     return res;
 }
 
@@ -357,6 +338,37 @@ function all_include(array, values){
     });
 }
 
+/**
+ * Many functions here rely on a structure
+ * by which there is an outer array:
+ * [[member, member]] at minimum.
+ * Wrap will add this wrapper array if a basic array ia passed.
+ * @param array
+ */
+function wrap(array){
+    let casing = [];
+    if(!and_fold(criterion(array, presets.type_check_each('Object')))) casing.push(array);
+    if(casing.length > 0) return casing;
+    return array;
+}
+
+/**
+ * Returns only the values not found in
+ * Any member or nest of the array
+ * @param array
+ * @param values
+ */
+function none_include(array, values){
+    return values.map((i)=>{
+        let res = extract_arrays(wrap(array)).map((x)=>{
+            return x.includes(i);
+        });
+        console.log(i, res);
+        if(!or_fold(res)) return i;
+        return null;
+    });
+}
+
 exports.criteria = criteria;
 exports.locate = locate;
 exports.matches = matches;
@@ -368,17 +380,13 @@ exports.filter_out = filter_out;
 exports.flatten = flatten;
 exports.retrieve = retrieve;
 exports.collapse = collapse;
+exports.extract = extract;
 
 let vals = ['dog', 'brain', 5, ['throat', 'phenomena'], 0, ['fish', 'google', ['doctor', 'rainbow']]];
-let depth = deep_locate(vals, [presets.type_check_each('string')]);
+let depth = deep_locate(vals, [presets.type_check_each('number')]);
 let crit = criteria(vals, [presets.type_check_each('string'), presets.type_check_each('number')], true);
-console.log(criteria(['dog', 'big', 4, 'sun', ['frog', 'cat']], [presets.type_check_each('string'), presets.type_check_each('number')]));
-console.log(deep_locate(['dog', 'big', 4, 'sun', ['frog', 'cat']], [presets.type_check_each('string'), presets.type_check_each('number')]));
-console.log(vals);
-console.log(depth);
 console.log(surface(depth));
 console.log(crit[0].result);
-console.log(extract_arrays(depth));
-console.log(all_include(depth, clean(depth)));
 console.log(retrieve(vals, [presets.type_check_each('string'), (x)=>{return x.length > 3}], all_include));
 console.log(all_include(['post', 'bear', ['dog', 'post', ['iron', 'post']]], ['post', 'rabinow']));
+console.log(none_include([['post', 'bear', ['dog', 'post', ['iron', 'post']]]], ['post', 'rabinow', 'bear', 'fulcrum']));

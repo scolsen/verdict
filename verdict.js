@@ -382,12 +382,20 @@ function none_include(array, values){
 
 /**
  * Returns all members that match the given criteria.
- * @param values
- * @param criteriaFn
+ * @param array
+ * @param criteriaFunctions
  */
-function all_fullfill(array, criteriaFunctions){
+function fulfills_all(array, criteriaFunctions, truthy){
   let res = deep_locate(array, criteriaFunctions);
     let fulfillment = all_include(res, clean(res));
+    return deep_filter(deep_map(array, (x, index)=>{
+        if(fulfillment.includes(index)) return x;
+    }), (x)=>{return x !== undefined});
+}
+
+function fulfills_none(array, criteriaFunctions){
+    let res = deep_locate(array, criteriaFunctions);
+    let fulfillment = none_include(res, clean(res));
     return deep_filter(deep_map(array, (x, index)=>{
         if(fulfillment.includes(index)) return x;
     }), (x)=>{return x !== undefined});
@@ -410,7 +418,8 @@ let depth = deep_locate(vals, [presets.type_check_each('number')]);
 let crit = criteria(vals, [presets.type_check_each('string'), presets.type_check_each('number')]);
 console.log(surface(depth));
 console.log(crit);
-console.log(all_fullfill(vals, [presets.type_check_each('string'), (x)=>{return x.length > 3}]));
+console.log(fulfills_all(vals, [presets.type_check_each('string'), (x)=>{return x.length > 3}]));
+console.log(fulfills_none(vals, [presets.type_check_each('string'), (x)=>{return x.length > 3}]));
 console.log(all_include(['post', 'bear', ['dog', 'post', ['iron', 'post']]], ['post', 'rabinow']));
 console.log(none_include([['post', 'bear', ['dog', 'post', ['iron', 'post']]]], ['post', 'rabinow', 'bear', 'fulcrum']));
 console.log(sequence_map([1,2,3, [2,4]], [(x)=>{return x + 3}, (x)=>{return x + 2}]));

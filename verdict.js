@@ -12,9 +12,10 @@ const presets = require('./presets');
 * Non truth values are wrapped in Boolean to convert to truth values.
 * Fn should be of form (x)=>{return x == 'string'} or some other test.
  */
-function criterion(array, fn){
-    return deep_map(array,(x, index, array)=>{return Boolean(fn(x, index, array));});
+function criterion (f){
+    return (x, index, array)=>{return Boolean(f(x, index, array));};
 }
+
 /** Specify multiple criterion array elements must match.
  * Specify a mode to combine the truth array results of each criterion.
  * Combine values of each truth array using the specified modeCallback (and || or)
@@ -25,9 +26,7 @@ function criterion(array, fn){
  * If wrap is true, return an object
  */
 function criteria(array, functions, wrap){
-    if(!Array.isArray(functions)) functions = arrize(arguments, 1);
-    let res = [];
-    functions.forEach((x)=>{res.push(criterion(array, x));});
+    let res = delimit_map(array, functions.map((x)=>{return criterion(x)}));
     if(wrap === true) {
         let obj = {};
         functions.map((x, index)=>{
@@ -40,6 +39,15 @@ function criteria(array, functions, wrap){
     return res;
 }
 
+/**
+ * Apply functions to every memeber of @array from
+ * lef to right. Applications are subsequent.
+ * function 2 is applied to the map resulting from
+ * the application of function 1.
+ * @param array
+ * @param functions
+ * @returns {*}
+ */
 function sequence_map(array, functions){
     if(!Array.isArray(functions)) functions = arrize(arguments, 1);
     if (functions.length !== 0){
@@ -50,6 +58,23 @@ function sequence_map(array, functions){
         return sequence_map(deep_map(array, func), functions);
     }
     return array;
+}
+
+/**
+ * Return an array thar contains the resultant maps of
+ * Applying each function in @functions to @array
+ * separately and not sequentially.
+ * @param array
+ * @param functions
+ * @returns {Array}
+ */
+function delimit_map(array, functions){
+    let res = [];
+    if(!Array.isArray(functions)) functions = arrize(arguments, 1);
+    functions.forEach((x)=>{
+        res.push(deep_map(array, x));
+    });
+    return res;
 }
 
 //Deep//
@@ -243,14 +268,6 @@ function split(array, criterionFn){
    return res;
 }
 
-/** Given an array of arbitrary dimensions
- * bundle all values matching the criterion
- * into a single array
- */
-function converge(array, criterionFn){
-    return 1;
-}
-
 function is_not_array(){
     return (x)=>{return !Array.isArray(x)}
 }
@@ -359,7 +376,7 @@ function all_include(array, values){
  */
 function wrap(array){
     let casing = [];
-    if(!and_fold(criterion(array, presets.type_check_each('Object')))) casing.push(array);
+    if(!and_fold(deep_map(array, criterion(presets.type_check_each('Object'))))) casing.push(array);
     if(casing.length > 0) return casing;
     return array;
 }
@@ -397,10 +414,12 @@ exports.sequence_map = sequence_map;
 
 let vals = ['dog', 'brain', 5, ['throat', 'phenomena'], 0, ['fish', 'google', ['doctor', 'rainbow']]];
 let depth = deep_locate(vals, [presets.type_check_each('number')]);
-let crit = criteria(vals, [presets.type_check_each('string'), presets.type_check_each('number')], true);
+let crit = criteria(vals, [presets.type_check_each('string'), presets.type_check_each('number')]);
 console.log(surface(depth));
-console.log(crit[0].result);
+console.log(crit);
 console.log(retrieve(vals, [presets.type_check_each('string'), (x)=>{return x.length > 3}], all_include));
 console.log(all_include(['post', 'bear', ['dog', 'post', ['iron', 'post']]], ['post', 'rabinow']));
 console.log(none_include([['post', 'bear', ['dog', 'post', ['iron', 'post']]]], ['post', 'rabinow', 'bear', 'fulcrum']));
 console.log(sequence_map([1,2,3, [2,4]], [(x)=>{return x + 3}, (x)=>{return x + 2}]));
+console.log(delimit_map([1,2,3, [2,4]], [(x)=>{return x + 3}, (x)=>{return x + 2}]));
+console.log(criteria([1,2,3], [(x)=>{return x + 3}, (x)=>{return 0}]));

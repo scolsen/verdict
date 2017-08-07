@@ -158,17 +158,6 @@ function or_fold(array){
 }
 
 /**
- * filter out all elements matching a given filter.
- * Return the resulting array.
- */
-function filter_out(array, criterionFn){
-    let res = [];
-    let indexes = flatten(locate(array, criterionFn));
-    array.map((x, index)=>{if(!indexes.includes(index)) res.push(x);});
-    return res;
-}
-
-/**
  * Given two arrays map their values using OR.
  * Arrays must have the same cardinality.
  * note we cannot use lambda here as we need to make use of this.
@@ -381,10 +370,8 @@ exports.split = split;
 exports.not = not;
 exports.or_map = or_map;
 exports.and_map = and_map;
-exports.filter_out = filter_out;
 exports.flatten = flatten;
 exports.retrieve = retrieve;
-exports.collapse = collapse;
 exports.extract = extract;
 exports.sequence_map = sequence_map;
 

@@ -158,30 +158,6 @@ function or_fold(array){
 }
 
 /**
-/* Collapse an array of truth arrays into a single array
-/* of the specified truth values.
-/* Returns the result of subsequently resolving each truth value
-/* using the specified combination method.
-/* e.g [[t,f],[t,f],[,f,f], or_map]
-/* => [[t,f],[f,f]]
-/* => [t,f]
-/* using the method provided as combinatorMethod.
-/* method must be a map (and_map, or_map)
- */
-function collapse(arrays, combinatorMethod){
-    let res = [];
-    arrays.reverse();
-    for(let i = arrays.length; i > 0; i--){
-        res.push(combinatorMethod(arrays.pop(), arrays.pop()));
-    }
-    if(filter_out(res, is_undefined()).length > 1) {
-        return collapse(filter_out(res, is_undefined()), combinatorMethod);
-    } else {
-        return filter_out(res, is_undefined())[0];
-    }
-}
-
-/**
  * filter out all elements matching a given filter.
  * Return the resulting array.
  */
@@ -422,4 +398,4 @@ console.log(all_include(['post', 'bear', ['dog', 'post', ['iron', 'post']]], ['p
 console.log(none_include([['post', 'bear', ['dog', 'post', ['iron', 'post']]]], ['post', 'rabinow', 'bear', 'fulcrum']));
 console.log(sequence_map([1,2,3, [2,4]], [(x)=>{return x + 3}, (x)=>{return x + 2}]));
 console.log(delimit_map([1,2,3, [2,4]], [(x)=>{return x + 3}, (x)=>{return x + 2}]));
-console.log(criteria([1,2,3], [(x)=>{return x + 3}, (x)=>{return 0}]));
+console.log(collapse(criteria([1,2,3], [(x)=>{return x + 3}, (x)=>{return 0}]), or_map));

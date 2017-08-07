@@ -16,6 +16,16 @@ function criterion (f){
     return (x, index, array)=>{return Boolean(f(x, index, array));};
 }
 
+function to_obj(aArray, bArray){
+   let obj = {};
+   aArray.map((x, index)=>{
+       obj[index] = {};
+       obj[index].a = x;
+       obj[index].b = bArray[index];
+   });
+   return obj;
+}
+
 /** Specify multiple criterion array elements must match.
  * Specify a mode to combine the truth array results of each criterion.
  * Combine values of each truth array using the specified modeCallback (and || or)
@@ -27,16 +37,18 @@ function criterion (f){
  */
 function criteria(array, functions, wrap){
     let res = delimit_map(array, functions.map((x)=>{return criterion(x)}));
-    if(wrap === true) {
-        let obj = {};
-        functions.map((x, index)=>{
-            obj[index] = {};
-            obj[index].criterion = x;
-            obj[index].result = res[index];
-        });
-        return obj;
-    }
+    if(wrap === true) return to_obj(functions, res);
     return res;
+}
+
+/**
+ * Pop the bottom of the stack
+ * @param array
+ */
+function sink(array){
+    array.reverse();
+    array.pop();
+    array.reverse();
 }
 
 /**
@@ -52,9 +64,7 @@ function sequence_map(array, functions){
     if(!Array.isArray(functions)) functions = arrize(arguments, 1);
     if (functions.length !== 0){
         let func = functions[0];
-        functions.reverse();
-        functions.pop();
-        functions.reverse();
+        sink(functions);
         return sequence_map(deep_map(array, func), functions);
     }
     return array;
@@ -385,4 +395,4 @@ console.log(all_include(['post', 'bear', ['dog', 'post', ['iron', 'post']]], ['p
 console.log(none_include([['post', 'bear', ['dog', 'post', ['iron', 'post']]]], ['post', 'rabinow', 'bear', 'fulcrum']));
 console.log(sequence_map([1,2,3, [2,4]], [(x)=>{return x + 3}, (x)=>{return x + 2}]));
 console.log(delimit_map([1,2,3, [2,4]], [(x)=>{return x + 3}, (x)=>{return x + 2}]));
-console.log(collapse(criteria([1,2,3], [(x)=>{return x + 3}, (x)=>{return 0}]), or_map));
+console.log(criteria([1,2,3], [(x)=>{return x + 3}, (x)=>{return 0}]));

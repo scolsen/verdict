@@ -40,6 +40,18 @@ function criteria(array, functions, wrap){
     return res;
 }
 
+function sequence_map(array, functions){
+    if(!Array.isArray(functions)) functions = arrize(arguments, 1);
+    if (functions.length !== 0){
+        let func = functions[0];
+        functions.reverse();
+        functions.pop();
+        functions.reverse();
+        return sequence_map(deep_map(array, func), functions);
+    }
+    return array;
+}
+
 //Deep//
 
 /**
@@ -51,7 +63,7 @@ function criteria(array, functions, wrap){
 function deep_map(array, func){
     return array.map((x, index, array)=>{
         if(Array.isArray(x)) return deep_map(x, func);
-        return func(x, index, array);
+        return func.call(this, x, index, array);
     });
 }
 
@@ -381,6 +393,7 @@ exports.flatten = flatten;
 exports.retrieve = retrieve;
 exports.collapse = collapse;
 exports.extract = extract;
+exports.sequence_map = sequence_map;
 
 let vals = ['dog', 'brain', 5, ['throat', 'phenomena'], 0, ['fish', 'google', ['doctor', 'rainbow']]];
 let depth = deep_locate(vals, [presets.type_check_each('number')]);
@@ -390,3 +403,4 @@ console.log(crit[0].result);
 console.log(retrieve(vals, [presets.type_check_each('string'), (x)=>{return x.length > 3}], all_include));
 console.log(all_include(['post', 'bear', ['dog', 'post', ['iron', 'post']]], ['post', 'rabinow']));
 console.log(none_include([['post', 'bear', ['dog', 'post', ['iron', 'post']]]], ['post', 'rabinow', 'bear', 'fulcrum']));
+console.log(sequence_map([1,2,3, [2,4]], [(x)=>{return x + 3}, (x)=>{return x + 2}]));

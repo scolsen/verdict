@@ -16,6 +16,14 @@ function criterion (f){
     return (x, index, array)=>{return Boolean(f(x, index, array));};
 }
 
+/**
+ * Pass as the pattern to deep_map to apply to all members.
+ * @returns {boolean}
+ */
+function tautology(){
+    return true;
+}
+
 function to_obj(aArray, bArray){
    let obj = {};
    aArray.map((x, index)=>{
@@ -87,8 +95,6 @@ function delimit_map(array, functions){
     return res;
 }
 
-//Deep//
-
 /**
  * deep_map. Apply designated function to all members
  * Of an array of arrays of any size.
@@ -113,8 +119,9 @@ function deep_map(array, func){
  * @returns {*|Array|{}}
  */
 function pattern_map(array, func, pattern){
+    if(typeof (pattern) !== 'function') throw new TypeError();
     return array.map((x, index, array)=>{
-        if(pattern(x)) func(x, index, array);
+        if(pattern(x)) return func(x, index, array);
         if(Array.isArray(x)) return pattern_map(x, func, pattern);
         return null;
     });
@@ -396,3 +403,4 @@ console.log(none_include([['post', 'bear', ['dog', 'post', ['iron', 'post']]]], 
 console.log(sequence_map([1,2,3, [2,4]], [(x)=>{return x + 3}, (x)=>{return x + 2}]));
 console.log(delimit_map([1,2,3, [2,4]], [(x)=>{return x + 3}, (x)=>{return x + 2}]));
 console.log(criteria([1,2,3], [(x)=>{return x + 3}, (x)=>{return 0}]));
+console.log(pattern_map(['hello', 4, 'dog'], (x)=>{return x + 3}, (x)=>{return typeof(x) === 'number'}));

@@ -1,30 +1,19 @@
-/**
- * Created by scottolsen on 7/29/17.
- * verdict.js
- */
-
 const presets = require('./presets');
+// Maps
+const maps = require('./maps');
 
-//Criteria//
 
-/** Returns a truth mapping of all the items in an array.
-* Based on the return of some arbitrary function  which should contain a test.
-* Non truth values are wrapped in Boolean to convert to truth values.
-* Fn should be of form (x)=>{return x == 'string'} or some other test.
- */
-function criterion (f){
+
+// Returns a truth mapping of all the items in an array.
+// Based on the return value of some arbitrary function which should contain a test.
+// Non truth values are wrapped in Boolean to convert to truth values.
+// Fn should be of form (x)=>{return x == 'string'} or some other test.
+
+const criterion = function criterion(f) {
     return (x, index, array)=>{return Boolean(f(x, index, array));};
 }
 
-/**
- * Pass as the pattern to deep_map to apply to all members.
- * @returns {boolean}
- */
-function tautology(){
-    return true;
-}
-
-function to_obj(aArray, bArray){
+const toObj = function toObj(aArray, bArray){
    let obj = {};
    aArray.map((x, index)=>{
        obj[index] = {};
@@ -43,88 +32,17 @@ function to_obj(aArray, bArray){
  * However subsequent arguments will be ignored.
  * If wrap is true, return an object
  */
-function criteria(array, functions, wrap){
-    let res = delimit_map(array, functions.map((x)=>{return criterion(x)}));
-    if(wrap === true) return to_obj(functions, res);
+const criteria = function criteria(array, functions, wrap){
+    let res = delimitMap(array, functions.map((x)=>{return criterion(x)}));
+    if(wrap === true) return toObj(functions, res);
     return res;
 }
 
-/**
- * Pop the bottom of the stack
- * @param array
- */
-function sink(array){
+// Pop the bottom of the stack
+const _sink = function _sink(array){
     array.reverse();
     array.pop();
     array.reverse();
-}
-
-/**
- * Apply functions to every memeber of @array from
- * lef to right. Applications are subsequent.
- * function 2 is applied to the map resulting from
- * the application of function 1.
- * @param array
- * @param functions
- * @returns {*}
- */
-function sequence_map(array, functions){
-    if(!Array.isArray(functions)) functions = arrize(arguments, 1);
-    if (functions.length !== 0){
-        let func = functions[0];
-        sink(functions);
-        return sequence_map(deep_map(array, func), functions);
-    }
-    return array;
-}
-
-/**
- * Return an array thar contains the resultant maps of
- * Applying each function in @functions to @array
- * separately and not sequentially.
- * @param array
- * @param functions
- * @returns {Array}
- */
-function delimit_map(array, functions){
-    let res = [];
-    if(!Array.isArray(functions)) functions = arrize(arguments, 1);
-    functions.forEach((x)=>{
-        res.push(deep_map(array, x));
-    });
-    return res;
-}
-
-/**
- * deep_map. Apply designated function to all members
- * Of an array of arrays of any size.
- * Supplied function should have signature:
- * func(x, index, array)
- */
-function deep_map(array, func){
-    return array.map((x, index, array)=>{
-        if(Array.isArray(x)) return deep_map(x, func);
-        return func.call(this, x, index, array);
-    });
-}
-
-/**
- * Deep_map but only runs the specified function if
- * the element matches the provided pattern which is
- * a function that returns a Boolean and is passed as
- * func[1]
- * @param array
- * @param func
- * @param pattern
- * @returns {*|Array|{}}
- */
-function pattern_map(array, func, pattern){
-    if(typeof (pattern) !== 'function') throw new TypeError();
-    return array.map((x, index, array)=>{
-        if(pattern(x)) return func(x, index, array);
-        if(Array.isArray(x)) return pattern_map(x, func, pattern);
-        return null;
-    });
 }
 
 /**
@@ -143,10 +61,10 @@ function deep_filter(array, filterFunction){
  * Locate indexes and retain structure
  * @param array
  * @param criteriaFunctions
- * @returns {Array.<T>|*}
+ * @returns {Array}
  */
 function deep_locate(array, criteriaFunctions){
-    function mapper (x, index, array){
+    function mapper (x, index){
             if(x) return index;
     }
     return deep_filter(deep_map(criteria(array, criteriaFunctions), mapper), (x)=>{return x !== undefined});
@@ -374,7 +292,6 @@ function none_include(array, values){
         let res = extract_arrays(wrap(array)).map((x)=>{
             return x.includes(i);
         });
-        console.log(i, res);
         if(!or_fold(res)) return i;
         return null;
     });
@@ -422,6 +339,7 @@ console.log(fulfills_all(vals, [presets.type_check_each('string'), (x)=>{return 
 console.log(fulfills_none(vals, [presets.type_check_each('string'), (x)=>{return x.length > 3}]));
 console.log(all_include(['post', 'bear', ['dog', 'post', ['iron', 'post']]], ['post', 'rabinow']));
 console.log(none_include([['post', 'bear', ['dog', 'post', ['iron', 'post']]]], ['post', 'rabinow', 'bear', 'fulcrum']));
+
 console.log(sequence_map([1,2,3, [2,4]], [(x)=>{return x + 3}, (x)=>{return x + 2}]));
 console.log(delimit_map([1,2,3, [2,4]], [(x)=>{return x + 3}, (x)=>{return x + 2}]));
 console.log(criteria([1,2,3], [(x)=>{return x + 3}, (x)=>{return 0}]));

@@ -1,3 +1,8 @@
+function _sink(array) {
+    array.reverse();
+    array.pop();
+    array.reverse();
+}
 function deepMap(array, func) {
     var _this = this;
     return array.map(function (x, index, array) {
@@ -21,8 +26,8 @@ function sequenceMap(array, func) {
         return deepMap(array, func);
     if (func.length !== 0) {
         var f = func[0];
-        sink(func);
-        return sequenceMap(deepMap(array, func), func);
+        _sink(func);
+        return sequenceMap(deepMap(array, f), func);
     }
     return array;
 }

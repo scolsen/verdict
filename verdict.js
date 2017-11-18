@@ -1,19 +1,18 @@
 const presets = require('./presets');
-// Maps
+
+//Maps
 const maps = require('./maps');
 
-
-
-// Returns a truth mapping of all the items in an array.
-// Based on the return value of some arbitrary function which should contain a test.
+// Returns a truth mapping of items in an array.
+// Based on the return value of some arbitrary function which should contain a predicate.
 // Non truth values are wrapped in Boolean to convert to truth values.
-// Fn should be of form (x)=>{return x == 'string'} or some other test.
+// Fn should be of form (x)=>{return x == 'string'}.
 
-const criterion = function criterion(f) {
-    return (x, index, array)=>{return Boolean(f(x, index, array));};
+function criterion(f) {
+    return (x, index, array) => {return Boolean(f(x, index, array));};
 }
 
-const toObj = function toObj(aArray, bArray){
+function toObj(aArray, bArray){
    let obj = {};
    aArray.map((x, index)=>{
        obj[index] = {};
@@ -32,74 +31,42 @@ const toObj = function toObj(aArray, bArray){
  * However subsequent arguments will be ignored.
  * If wrap is true, return an object
  */
-const criteria = function criteria(array, functions, wrap){
+function criteria(array, functions, wrap){
     let res = delimitMap(array, functions.map((x)=>{return criterion(x)}));
     if(wrap === true) return toObj(functions, res);
     return res;
 }
 
-// Pop the bottom of the stack
-const _sink = function _sink(array){
-    array.reverse();
-    array.pop();
-    array.reverse();
-}
-
-/**
- * Filter contents and retain structure
- * @param array
- * @param filterFunction
- */
-function deep_filter(array, filterFunction){
+// Filter contents and retain structure
+function deepFilter(array, filterFunction){
     array.map((x, index, array)=>{
-        if(Array.isArray(x)) array[index] = deep_filter(x, filterFunction);
+        if(Array.isArray(x)) array[index] = deepFilter(x, filterFunction);
     });
     return array.filter(filterFunction);
 }
 
-/**
- * Locate indexes and retain structure
- * @param array
- * @param criteriaFunctions
- * @returns {Array}
- */
-function deep_locate(array, criteriaFunctions){
-    function mapper (x, index){
+// Locate indexes and retain structure
+function deepLocate(array, criteriaFunctions){
+    function mapper (x, index) {
             if(x) return index;
     }
-    return deep_filter(deep_map(criteria(array, criteriaFunctions), mapper), (x)=>{return x !== undefined});
-}
-
-/**
- * Convert arguments to an array, starting from the specified position
- */
-function arrize(args, startPos){
-    return Array.from(args).slice(startPos);
-}
-
-/** Expects an array of truth values.
- * Returns an array containing the opposite value of each.
- * Optionally first generates the array of T values with a criterion.
- */
-function not(){
-    return (x)=>{return !x};
+    return deepFilter(deepMap(criteria(array, criteriaFunctions), mapper), (x)=>{return x !== undefined});
 }
 
 /** Reduce the contents of a truth array by applying or
  * To each value successively
  */
-function or_fold(array){
+function orFold(array){
     return array.reduce((x, y)=>{return x || y});
 }
 
 /**
- * Given two arrays map their values using OR.
+ * Given two arrays or truth values map their values using OR.
  * Arrays must have the same cardinality.
  * note we cannot use lambda here as we need to make use of this.
  * In the case a second Array is not provided, return x.
  */
-function or_map(arrayOne, arrayTwo){
-   if(arrayOne === undefined) return;
+function orMap(arrayOne, arrayTwo){
     return arrayOne.map(function (x, index){
        if(this[index] !== undefined){
            return x || this[index]
@@ -108,9 +75,8 @@ function or_map(arrayOne, arrayTwo){
    }, arrayTwo);
 }
 
-// And map. Given two arrays, map their values using AND
-function and_map(arrayOne, arrayTwo){
-    if(arrayOne === undefined) return;
+// And map. Given two arrays of truth values, map their values using AND
+function andMap(arrayOne, arrayTwo){
     return arrayOne.map(function(x, index){
         if(this[index] !== undefined){
             return x && this[index];
@@ -119,10 +85,8 @@ function and_map(arrayOne, arrayTwo){
     }, arrayTwo);
 }
 
-/** Reduce the contents of a truth array by applying and
- * To each value successively
- */
-function and_fold(array){
+// Reduce the contents of a truth array by applying and to each value successively
+function andFold(array){
     return array.reduce((x, y)=>{return x && y});
 }
 
@@ -133,20 +97,16 @@ function matches(array, regex){
     return array.filter(type_check_each('string')).map((x)=>{return x.match(regex);});
 }
 
-/** Retrieve the elements from a source array that satisfy the given
- * locate method.
- */
+// Retrieve the elements from a source array that satisfy the given locate method.
 function retrieve(array, criteriaFunctions, fulfillmentMethod){
-    let res = deep_locate(array, criteriaFunctions);
+    let res = deepLocate(array, criteriaFunctions);
     let fulfillment = fulfillmentMethod(res, clean(res));
-    return deep_filter(deep_map(array, (x, index)=>{
+    return deepFilter(deep_map(array, (x, index)=>{
         if(fulfillment.includes(index)) return x;
     }), (x)=>{return x !== undefined});
 }
 
-/** After locating, reduce the result to a one dimension array
- * Unique items only. Does not duplicate indexes.
- */
+// After locating, reduce the result to a one dimensional array. Unique items only. Does not duplicate indexes.
 function flatten(locateIndexes){
     let flat = [];
     locateIndexes.forEach((x)=>{return x.map((x)=>{if (!flat.includes(x)) flat.push(x)})});
@@ -175,27 +135,22 @@ function is_not_array(){
 /**
  * Grab only the surface of an array--top level elements.
  * Filter out all nested arrays and their members.
- * @param array
- * @returns {*|{}|Array}
  */
 function surface(array){
-   return array.map((x)=>{return deep_filter(x, is_not_array())});
+   return array.map((x)=>{return deepFilter(x, is_not_array())});
 }
 
 /**
  * Shallow locate is just a deep locate filtering out nested arrays beyond the top level
  * Since the top level contains some number of arrays based on the number of
  * Criteria provided.
- * @param array
- * @param criteriaFunctions
- * @returns {Array}
  */
 function locate(array, criteriaFunctions){
-    return deep_locate(array, criteriaFunctions).map((x)=>{return deep_filter(x, is_not_array())});
+    return deepLocate(array, criteriaFunctions).map((x)=>{return deepFilter(x, is_not_array())});
 }
 
 /**
- * Bundle an arrays contents into an object.
+ * Bundle an array's contents into an object.
  * Where a specified set of indicies serves as keys
  * @param keyIndexes
  * @param contents
@@ -210,35 +165,21 @@ function bundle(keyIndexes, contents){
     });
 }
 
-/**
- * Extract all members (non-array) from an array.
- * Does not ignore duplicates.
- * @param array
- * @returns {Array}
- */
+// Extract all members (non-array) from an array. Does not ignore duplicates.
 function extract(array){
     let res = [];
-    deep_map(array, (x)=>{res.push(x)});
+    deepMap(array, (x)=>{res.push(x)});
     return res;
 }
 
-/**
- * pull each array out of a nested array and push
- * to a new array as individual elements.
- * @param array
- * @returns {Array}
- */
+// Pull each array out of a nested array and push to a new array as individual elements.
 function extract_arrays(array){
     let res = [];
     pattern_map(array, (x)=>{res.push(x)}, (x)=>{return Array.isArray(x)});
     return res;
 }
 
-/**
- * Extract unique non-array members from an array.
- * @param array
- * @returns {Array}
- */
+// Extract unique non-array members from an array.
 function clean(array){
     let res = [];
     deep_map(array, (x)=>{
@@ -271,12 +212,12 @@ function all_include(array, values){
  * Many functions here rely on a structure
  * by which there is an outer array:
  * [[member, member]] at minimum.
- * Wrap will add this wrapper array if a basic array ia passed.
+ * Wrap will add this wrapper array if a basic array is passed.
  * @param array
  */
 function wrap(array){
     let casing = [];
-    if(!and_fold(deep_map(array, criterion(presets.type_check_each('Object'))))) casing.push(array);
+    if(!andFold(deepMap(array, criterion(presets.type_check_each('Object'))))) casing.push(array);
     if(casing.length > 0) return casing;
     return array;
 }

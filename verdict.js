@@ -3,7 +3,20 @@ const presets = require('./presets');
 //Maps
 const maps = require('./maps');
 
-// Returns a truth mapping of items in an array.
+const unit = (function () {
+  return Symbol('unit');
+}())
+
+// Reduce the contents of a truth array by applying and to each value successively
+function and(...predicates){
+    return predicates.reduce((acc, curr)=>{return acc && curr});
+}
+
+function deSpread(){
+  
+}
+
+//]() Returns a truth mapping of items in an array.
 // Based on the return value of some arbitrary function which should contain a predicate.
 // Non truth values are wrapped in Boolean to convert to truth values.
 // Fn should be of form (x)=>{return x == 'string'}.
@@ -85,10 +98,7 @@ function andMap(arrayOne, arrayTwo){
     }, arrayTwo);
 }
 
-// Reduce the contents of a truth array by applying and to each value successively
-function andFold(array){
-    return array.reduce((x, y)=>{return x && y});
-}
+
 
 /** Checks to see if each array element matches a given regex
  * returns an array of truth values indicating whether or not the element matched.
